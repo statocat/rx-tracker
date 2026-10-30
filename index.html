@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Med Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%231d6b66'/%3E%3Crect x='45' y='70' width='90' height='40' rx='20' fill='%23fff'/%3E%3Crect x='90' y='70' width='45' height='40' rx='0' fill='%23f2b84b'/%3E%3Crect x='45' y='70' width='90' height='40' rx='20' fill='none' stroke='%23fff' stroke-width='6'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💊%3C/text%3E%3C/svg%3E">
+<title>Med Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f2; --surface:#ffffff; --band:#f4f7f7; --ink:#18282c; --muted:#5b6b6f;
+  --line:#d5dfdf; --accent:#1d6b66; --accent-ink:#ffffff; --danger:#b3261e;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1719; --surface:#182326; --band:#1d2a2d; --ink:#e6eeee; --muted:#9db0b2;
+    --line:#2c3c40; --accent:#5cc2b8; --accent-ink:#06201e; --danger:#ff8a80;
+    color-scheme: dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:17px/1.45 "Atkinson Hyperlegible",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%}
+main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.9rem;line-height:1.1;margin:8px 0 2px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 18px}
+h2{font-size:1.15rem;margin:0 0 10px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:4px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.full{margin-bottom:10px}
+button{font:inherit;border:0;border-radius:10px;padding:11px 16px;min-height:46px;cursor:pointer}
+.primary{background:var(--accent);color:var(--accent-ink);font-weight:700;width:100%}
+.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{background:var(--band);color:var(--ink);border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;min-height:36px;font-size:.92rem;display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;background:var(--band);color:var(--ink);border:1px solid var(--line);min-height:38px;padding:6px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#chartWrap{width:100%;overflow-x:auto}
+#chart text{fill:var(--muted);font-size:12px;font-family:inherit}
+#chart .lane-label{fill:var(--ink);font-size:13px;font-weight:700}
+#detail{min-height:1.5em;margin:8px 0 0;font-size:.95rem}
+.empty{color:var(--muted);margin:6px 0}
+ul{list-style:none;margin:0;padding:0}
+.day{font-size:.85rem;color:var(--muted);margin:14px 0 4px;font-weight:700}
+.day:first-child{margin-top:0}
+li.entry{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+li.entry .what{flex:1;min-width:0}
+li.entry .when{color:var(--muted);font-size:.88rem}
+li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
+.del{background:transparent;color:var(--danger);min-height:40px;padding:6px 10px;font-size:.9rem}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools button{flex:1}
+#backupBox{margin-top:10px;min-height:120px;font-size:.8rem;display:none}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Med Log</h1>
+  <p class="sub">Your doses, kept on this phone.</p>
+
+  <section aria-labelledby="logH">
+    <h2 id="logH">Log a dose</h2>
+    <div class="chips" id="quick"></div>
+    <div class="full">
+      <label for="med">Medication</label>
+      <input id="med" list="medList" autocomplete="off" placeholder="e.g. Ibuprofen">
+      <datalist id="medList"></datalist>
+    </div>
+    <div class="row">
+      <div>
+        <label for="dose">Dose</label>
+        <input id="dose" type="number" inputmode="decimal" step="any" min="0" placeholder="200">
+      </div>
+      <div>
+        <label for="unit">Unit</label>
+        <input id="unit" list="unitList" autocomplete="off" value="mg">
+        <datalist id="unitList">
+          <option value="mg"><option value="mcg"><option value="g"><option value="mL">
+          <option value="tablet"><option value="capsule"><option value="puff"><option value="drop"><option value="IU"><option value="units">
+        </datalist>
+      </div>
+    </div>
+    <div class="full">
+      <label for="when">Taken at</label>
+      <input id="when" type="datetime-local">
+    </div>
+    <div class="full">
+      <label for="note">Note (optional)</label>
+      <input id="note" autocomplete="off" placeholder="with food, headache, etc.">
+    </div>
+    <button class="primary" id="save">Log dose</button>
+  </section>
+
+  <section aria-labelledby="chartH">
+    <h2 id="chartH">Doses over time</h2>
+    <div class="seg" role="group" aria-label="Time range">
+      <button data-range="1">24 h</button>
+      <button data-range="7" aria-pressed="true">7 days</button>
+      <button data-range="30">30 days</button>
+      <button data-range="all">All</button>
+    </div>
+    <div id="chartWrap"><svg id="chart" role="img" aria-label="Scatter plot of doses by medication over time"></svg></div>
+    <p id="detail" aria-live="polite"></p>
+  </section>
+
+  <section aria-labelledby="histH">
+    <h2 id="histH">History</h2>
+    <div id="history"></div>
+  </section>
+
+  <section aria-labelledby="bkH">
+    <h2 id="bkH">Backup</h2>
+    <p class="empty" style="margin-top:0">Your log lives only on this device. Export now and then so you don’t lose it.</p>
+    <div class="tools">
+      <button class="ghost" id="exportBtn">Export CSV</button>
+      <button class="ghost" id="importBtn">Import CSV</button>
+    </div>
+    <input type="file" id="fileIn" accept=".csv,text/csv,text/plain" hidden>
+    <textarea id="backupBox" readonly aria-label="Backup text"></textarea>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+  const KEY = "medlog.v1";
+  const COLORS = ["#1d6b66","#c2410c","#6d28d9","#b45309","#0369a1","#be185d","#4d7c0f","#475569","#a16207","#0e7490"];
+  const $ = id => document.getElementById(id);
+  let entries = load();
+  let range = "7";
+
+  function load(){
+    try { const raw = localStorage.getItem(KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  }
+  function persist(){
+    try { localStorage.setItem(KEY, JSON.stringify(entries)); }
+    catch(e){ toast("Couldn’t save on this device. Export a backup."); }
+  }
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+  }
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function localInput(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes()); }
+  function fmtTime(t){ return new Date(t).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }
+  function fmtDay(t){ return new Date(t).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}); }
+  function fmtDose(e){ return (e.dose === "" || e.dose == null ? "" : e.dose + " ") + (e.unit || ""); }
+
+  function medNames(){
+    const seen = new Map();
+    entries.forEach(e => { const k = e.med.toLowerCase(); if(!seen.has(k)) seen.set(k, e.med); });
+    return [...seen.values()].sort((a,b)=>a.localeCompare(b));
+  }
+  function colorFor(name){
+    const names = medNames().map(n=>n.toLowerCase());
+    const i = names.indexOf(name.toLowerCase());
+    return COLORS[(i < 0 ? 0 : i) % COLORS.length];
+  }
+  function lastFor(name){
+    let best = null;
+    entries.forEach(e => { if(e.med.toLowerCase() === name.toLowerCase() && (!best || e.t > best.t)) best = e; });
+    return best;
+  }
+
+  /* ---------- Quick picks ---------- */
+  function renderQuick(){
+    const box = $("quick"); box.replaceChildren();
+    const dl = $("medList"); dl.replaceChildren();
+    const names = medNames();
+    names.forEach(n => { const o = document.createElement("option"); o.value = n; dl.appendChild(o); });
+    const recent = names.map(n => lastFor(n)).sort((a,b)=>b.t-a.t).slice(0,6);
+    recent.forEach(e => {
+      const b = document.createElement("button");
+      b.className = "chip"; b.type = "button";
+      const d = document.createElement("span"); d.className = "dot"; d.style.background = colorFor(e.med);
+      b.append(d, document.createTextNode(e.med + (fmtDose(e) ? " " + fmtDose(e) : "")));
+      b.addEventListener("click", () => {
+        $("med").value = e.med; $("dose").value = e.dose ?? ""; $("unit").value = e.unit || "";
+        $("when").value = localInput(new Date());
+        $("save").focus();
+      });
+      box.appendChild(b);
+    });
+    box.style.display = recent.length ? "" : "none";
+  }
+
+  /* ---------- Save ---------- */
+  $("save").addEventListener("click", () => {
+    const med = $("med").value.trim();
+    if(!med){ toast("Enter a medication name."); $("med").focus(); return; }
+    const doseRaw = $("dose").value.trim();
+    const dose = doseRaw === "" ? "" : Number(doseRaw);
+    if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); $("dose").focus(); return; }
+    const when = $("when").value ? new Date($("when").value) : new Date();
+    if(isNaN(when)){ toast("Check the date and time."); return; }
+    const existing = medNames().find(n => n.toLowerCase() === med.toLowerCase());
+    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim() });
+    persist();
+    $("note").value = ""; $("when").value = localInput(new Date());
+    toast("Logged " + (existing || med) + ".");
+    renderAll();
+  });
+
+  /* ---------- Chart ---------- */
+  document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+    range = b.dataset.range;
+    document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    $("detail").textContent = "";
+    renderChart();
+  }));
+
+  function svgEl(tag, attrs){
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function renderChart(){
+    const svg = $("chart"); svg.replaceChildren();
+    const now = Date.now();
+    let x0, x1;
+    if(range === "all"){
+      if(!entries.length){ x0 = now - 7*864e5; x1 = now; }
+      else {
+        const ts = entries.map(e=>e.t);
+        x0 = Math.min(...ts); x1 = Math.max(...ts, now);
+        const padT = Math.max((x1-x0)*0.04, 36e5); x0 -= padT; x1 += padT;
+      }
+    } else { x1 = now + 36e5*0.5; x0 = now - Number(range)*864e5; }
+
+    const shown = entries.filter(e => e.t >= x0 && e.t <= x1);
+    const meds = [...new Set(shown.map(e => medNames().find(n=>n.toLowerCase()===e.med.toLowerCase()) || e.med))]
+      .sort((a,b)=>a.localeCompare(b));
+
+    const W = Math.max($("chartWrap").clientWidth, 300);
+    const left = 96, right = 14, top = 8, laneH = 46, axisH = 30;
+    const lanes = Math.max(meds.length, 1);
+    const H = top + lanes*laneH + axisH;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    const xs = t => left + (t - x0) / (x1 - x0) * (W - left - right);
+
+    if(!meds.length){
+      const tx = svgEl("text", {x: W/2, y: top + laneH/2 + 4, "text-anchor":"middle"});
+      tx.textContent = entries.length ? "No doses in this range." : "Log a dose to see it here.";
+      svg.appendChild(tx);
+    }
+
+    // lanes
+    meds.forEach((m, i) => {
+      const y = top + i*laneH;
+      if(i % 2 === 0) svg.appendChild(svgEl("rect", {x:0, y, width:W, height:laneH, fill:"var(--band)", rx:6}));
+      const lab = svgEl("text", {x:8, y: y + laneH/2 + 4, class:"lane-label"});
+      lab.textContent = m.length > 11 ? m.slice(0,10) + "…" : m;
+      const ttl = svgEl("title", {}); ttl.textContent = m; lab.appendChild(ttl);
+      svg.appendChild(lab);
+    });
+
+    // ticks
+    const span = x1 - x0, axisY = top + lanes*laneH;
+    svg.appendChild(svgEl("line", {x1:left, x2:W-right, y1:axisY, y2:axisY, stroke:"var(--line)"}));
+    let ticks = [];
+    if(span <= 1.6*864e5){
+      const d = new Date(x0); d.setMinutes(0,0,0); d.setHours(Math.ceil(d.getHours()/6)*6);
+      for(let t=d.getTime(); t<=x1; t+=6*36e5) ticks.push([t, new Date(t).toLocaleTimeString([], {hour:"numeric"})]);
+    } else {
+      const days = Math.max(1, Math.ceil(span/864e5/5));
+      const d = new Date(x0); d.setHours(0,0,0,0); d.setDate(d.getDate()+1);
+      for(; d.getTime()<=x1; d.setDate(d.getDate()+days))
+        ticks.push([d.getTime(), d.toLocaleDateString([], {month:"short", day:"numeric"})]);
+    }
+    ticks.forEach(([t, label]) => {
+      const x = xs(t); if(x < left || x > W-right) return;
+      svg.appendChild(svgEl("line", {x1:x, x2:x, y1:top, y2:axisY+4, stroke:"var(--line)", "stroke-dasharray":"2 4"}));
+      const tx = svgEl("text", {x, y: axisY + 19, "text-anchor":"middle"}); tx.textContent = label;
+      svg.appendChild(tx);
+    });
+
+    // dots: size relative to that med's largest dose
+    const maxDose = {};
+    shown.forEach(e => { const k = e.med.toLowerCase(); const v = Number(e.dose)||0; maxDose[k] = Math.max(maxDose[k]||0, v); });
+    shown.sort((a,b)=>a.t-b.t).forEach(e => {
+      const i = meds.findIndex(m => m.toLowerCase() === e.med.toLowerCase());
+      const cy = top + i*laneH + laneH/2, cx = xs(e.t);
+      const md = maxDose[e.med.toLowerCase()];
+      const r = md > 0 ? 5 + 8 * ((Number(e.dose)||0) / md) : 8;
+      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
+      g.appendChild(svgEl("circle", {cx, cy, r: Math.max(r, 16), fill:"transparent"}));
+      g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.8", stroke:"var(--surface)", "stroke-width":"1.5"}));
+      const show = () => { $("detail").textContent = `${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, taken ${fmtDay(e.t)} at ${fmtTime(e.t)}${e.note ? ". " + e.note : ""}`; };
+      g.addEventListener("click", show);
+      g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
+      svg.appendChild(g);
+    });
+  }
+
+  /* ---------- History ---------- */
+  function renderHistory(){
+    const box = $("history"); box.replaceChildren();
+    if(!entries.length){
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "No doses yet. Your first one will show up here.";
+      box.appendChild(p); return;
+    }
+    const sorted = [...entries].sort((a,b)=>b.t-a.t).slice(0, 200);
+    let lastDay = "", ul = null;
+    sorted.forEach(e => {
+      const day = fmtDay(e.t);
+      if(day !== lastDay){
+        const h = document.createElement("div"); h.className = "day"; h.textContent = day; box.appendChild(h);
+        ul = document.createElement("ul"); box.appendChild(ul); lastDay = day;
+      }
+      const li = document.createElement("li"); li.className = "entry";
+      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(e.med);
+      const what = document.createElement("div"); what.className = "what";
+      const top = document.createElement("div"); top.textContent = e.med + (fmtDose(e) ? " " + fmtDose(e) : "");
+      const when = document.createElement("div"); when.className = "when"; when.textContent = fmtTime(e.t);
+      what.append(top, when);
+      if(e.note){ const n = document.createElement("div"); n.className = "note"; n.textContent = e.note; what.appendChild(n); }
+      const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
+      del.setAttribute("aria-label", "Delete " + e.med + " at " + fmtTime(e.t));
+      del.addEventListener("click", () => {
+        if(!confirm(`Delete ${e.med} on ${day} at ${fmtTime(e.t)}?`)) return;
+        entries = entries.filter(x => x.id !== e.id); persist(); toast("Deleted."); renderAll();
+      });
+      li.append(dot, what, del); ul.appendChild(li);
+    });
+    if(entries.length > 200){
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "Showing the latest 200. Export for the full log.";
+      box.appendChild(p);
+    }
+  }
+
+  /* ---------- Backup ---------- */
+  function csvCell(v){ v = String(v ?? ""); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
+  function toCSV(){
+    const rows = [["taken_at","medication","dose","unit","note"]];
+    [...entries].sort((a,b)=>a.t-b.t).forEach(e => rows.push([localInput(new Date(e.t)), e.med, e.dose, e.unit, e.note]));
+    return rows.map(r => r.map(csvCell).join(",")).join("\n");
+  }
+  function parseCSV(text){
+    const rows = []; let row = [], cell = "", q = false;
+    for(let i=0;i<text.length;i++){
+      const c = text[i];
+      if(q){ if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+      else if(c === '"') q = true;
+      else if(c === ","){ row.push(cell); cell = ""; }
+      else if(c === "\n" || c === "\r"){ if(c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim() !== ""));
+  }
+
+  $("exportBtn").addEventListener("click", async () => {
+    if(!entries.length){ toast("Nothing to export yet."); return; }
+    const csv = toCSV();
+    const name = "med-log-" + localInput(new Date()).slice(0,10) + ".csv";
+    try {
+      const file = new File([csv], name, {type:"text/csv"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Med Log backup"}); return; }
+    } catch(e){ if(e && e.name === "AbortError") return; }
+    try {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    } catch(e){}
+    const box = $("backupBox"); box.style.display = "block"; box.value = csv;
+    box.focus(); box.select();
+  });
+
+  $("importBtn").addEventListener("click", () => $("fileIn").click());
+  $("fileIn").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if(!f) return;
+    const rows = parseCSV(await f.text());
+    if(!rows.length || rows[0][0].trim().toLowerCase() !== "taken_at"){ toast("That file isn’t a Med Log export."); return; }
+    const have = new Set(entries.map(e => e.t + "|" + e.med.toLowerCase() + "|" + e.dose));
+    let added = 0;
+    rows.slice(1).forEach(r => {
+      const d = new Date(r[0]); if(isNaN(d) || !r[1]) return;
+      const dose = r[2] === "" || r[2] == null ? "" : Number(r[2]);
+      const e = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), t: d.getTime(), med: r[1].trim(), dose, unit: (r[3]||"").trim(), note: (r[4]||"").trim() };
+      const k = e.t + "|" + e.med.toLowerCase() + "|" + e.dose;
+      if(!have.has(k)){ entries.push(e); have.add(k); added++; }
+    });
+    persist(); renderAll();
+    toast(added ? `Imported ${added} dose${added === 1 ? "" : "s"}.` : "No new doses in that file.");
+  });
+
+  function renderAll(){ renderQuick(); renderChart(); renderHistory(); }
+  $("when").value = localInput(new Date());
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderChart, 150); });
+  renderAll();
+})();
+</script>
+</body>
+</html>
